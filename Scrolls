@@ -1,0 +1,52 @@
+local RS = game:GetService("ReplicatedStorage")
+local HS = game:GetService("HttpService")
+local plr = game.Players.LocalPlayer
+
+local items = {
+    "Common Scroll","Rare Scroll","Legendary Scroll",
+    "Mythical Scroll","Blessed Scroll","Cursed Scroll"
+}
+
+local function C(i)
+    local inv = RS.Remotes.CommF_:InvokeServer("getInventory")
+    for _,v in ipairs(inv) do if v.Name==i then return v.Count or 1 end end
+    return 0
+end
+
+local function embed(ping)
+    local f = {}
+    for _,name in ipairs(items) do
+        local n = C(name)
+        local val = n>0 and ("**```"..n.."```**") or "```0```"
+        table.insert(f,{name=name.." x"..n,value=val,inline=true})
+    end
+    return {
+        content = ping and "@everyone" or nil,
+        embeds={{title=plr.Name.." | "..plr.UserId,color=3447003,fields=f,footer={text=os.date("%X - %d/%m/%Y")}}}
+    }
+end
+
+local function pack()
+    local t={}
+    for _,v in ipairs(items) do table.insert(t,C(v)) end
+    return t
+end
+
+local last, first = "", true
+
+local function run()
+    local cur = HS:JSONEncode(pack())
+    if first then
+        first=false
+        last=cur
+        request({Url=getgenv().urlwhscrolls,Method="POST",Headers={["Content-Type"]="application/json"},Body=HS:JSONEncode(embed(false))})
+        return
+    end
+    if cur~=last then
+        last=cur
+        request({Url=getgenv().urlwhscrolls,Method="POST",Headers={["Content-Type"]="application/json"},Body=HS:JSONEncode(embed(true))})
+    end
+end
+
+run()
+while task.wait(timechscrolls) do run() end
